@@ -28,6 +28,22 @@ library(readxl)
 library(scales)
 library(DT)
 library(gt)
+library(phyloseq)
+#library(knitr)
+#library(rcartocolor)
+#library(microViz)
+#library(vegan)
+#library(broom)
+#library(ggtext)
+#library(plyr)
+#library(DESeq2)
+#library(plotly)
+#library(modelsummary)
+#library(MicrobiomeStat)
+#library(microbiome)
+#library(aplot)
+
+
 theme_set(theme_minimal(base_size = 24, base_family = "Atkinson Hyperlegible"))
 ```
 
@@ -35,7 +51,9 @@ theme_set(theme_minimal(base_size = 24, base_family = "Atkinson Hyperlegible"))
 #| label: load-data
 #| message: false
 
-ld <- read_excel("data/ld.xlsx")
+ps<- readRDS("data/ps_object.rds")
+
+
 ```
 
 ```{r, set inputs}}
@@ -47,18 +65,33 @@ time_period <- paste(params$month, params$year)
 ```{r, data prep}
 #| label: prep-data
 
-ld <- ld |>
-  mutate(
-    delivery_method = str_to_sentence(delivery_method),
-    term = str_to_sentence(term),
-    parity = case_when(
-      parity == "1"  ~ "Nulliparous",
-      parity == "2"  ~ "Primiparous",
-      parity == "3+" ~ "Multiparous"
-    ),
-    parity = fct_relevel(parity, "Nulliparous", "Primiparous", "Multiparous"),
-    maternal_age = fct_relevel(maternal_age, "<20", "20-34", "35+")
-  )
+
+```
+
+```{r, key fuctions}
+#| label: key fuctions
+
+#color picker
+get_color <- function(value) {
+  # Ensure the value is within the expected range
+  if (value < 1 || value > 5) {
+    stop("Value must be between 1 and 5")
+  }
+  
+  # Define the color scale from red to yellow to blue
+  color_palette <- colorRampPalette(c("#C21D00", "#FF932B", "#4655DF"))
+  
+  # Generate the colors for values 1 to 5
+  colors <- color_palette(5)
+  
+  # Return the color corresponding to the input value
+  return(colors[value])
+}
+
+
+
+
+
 ```
 
 #  {.sidebar}
@@ -92,35 +125,13 @@ Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem
 
 # Resumen
 
-```{r, All Values}
+```{r, Resumen}
 #| label: all-values
 #| results: hide
 
-n_births <- nrow(ld)
+num_species <- ntaxa(ps)
 
-p_cesarean <- ld |>
-  count(delivery_method) |>
-  mutate(p = n / sum(n)) |>
-  filter(delivery_method == "Cesarean") |>
-  pull(p)
 
-p_cesarean_color <- case_when(
-  between(p_cesarean, params$us_cesarean_rate, params$us_cesarean_rate + params$threshold_diff) ~ "warning",
-  p_cesarean > params$us_cesarean_rate + params$threshold_diff ~ "danger",
-  .default = "light"
-  )
-
-p_preterm <- ld |>
-  count(term) |>
-  mutate(p = n / sum(n)) |>
-  filter(term == "Pre-term") |>
-  pull(p)
-
-p_preterm_color <- case_when(
-  between(p_preterm, params$us_preterm_rate, params$us_preterm_rate + params$threshold_diff) ~ "warning",
-  p_preterm > params$us_preterm_rate + params$threshold_diff ~ "danger",
-  .default = "light"
-  )
 ```
 
 ## Row {height="20%"}
@@ -130,20 +141,20 @@ p_preterm_color <- case_when(
 #| title: "Micro-ID Score"
 
 list(
-  icon = "file-medical",
-  color = "primary",
-  value = n_births
+  icon = "moisture",
+  color = get_color(1),
+  value = num_species
 )
-```
+``` 
 
 ```{r,  value box Scoring Salud}
 #| content: valuebox
 #| title: "Score Salud"
 
 list(
-  icon = "file-medical",
-  color = "primary",
-  value = n_births
+  icon = "bug",
+  color = get_color(2),
+  value = num_species
 )
 ```
 
@@ -153,8 +164,8 @@ list(
 
 list(
   icon = "clipboard2-pulse",
-  color = p_cesarean_color,
-  value = label_percent(accuracy = 0.1)(p_cesarean)
+  color = get_color(3),
+  value = num_species
 )
 ```
 
@@ -163,9 +174,9 @@ list(
 #| title: "Score Metabolico"
 
 list(
-  icon = "calendar-week",
-  color = p_preterm_color,
-  value = label_percent(accuracy = 0.1)(p_preterm)
+  icon = "bar-chart-steps",
+  color = get_color(5),
+  value = num_species
 )
 ```
 
@@ -176,58 +187,22 @@ list(
 ```{r, Distribucion Top Bacterias}
 #| title: Distribucion Top Bacterias
 
-ld |>
-  count(delivery_method) |>
-  mutate(p = n / sum(n)) |>
-  gt() |>
-  fmt_percent(
-    columns = p,
-    decimals = 1
-  ) |>
-  tab_style(
-    style = cell_text(color = "#ae8b2d", weight = "bold"),
-    locations = cells_body(
-      columns = everything(),
-      rows = delivery_method == "Cesarean"
-    )
-  ) |>
-  tab_style(
-    style = cell_text(color = "#0e2635", weight = "bold"),
-    locations = cells_body(
-      columns = everything(),
-      rows = delivery_method == "Vaginal"
-    )
-  ) |>
-  cols_label(
-    delivery_method = "",
-    n = "Number of<br>deliveries",
-    p = "Proportion of<br>deliveries",
-    .fn = md
-  )
+plot(mtcars)
+
 ```
 
 ### Column {width="40%"}
 
 ```{r}
-#| title: Maternal age
+#| title: Grafico 2
 
-ld |>
-  count(maternal_age) |>
-  mutate(p = n / sum(n)) |>
-  ggplot(aes(x = maternal_age, y = n, group = 1)) +
-  geom_line(linewidth = 2, color = "#0e263560") +
-  geom_point(size = 3, color = "#0e2635") +
-  geom_point(size = 6, color = "#0e2635", shape = "circle open") +
-  labs(x = NULL) +
-  scale_y_continuous(
-    "Count",
-    sec.axis = sec_axis(~ . / n_births, name = "Proportion", labels = label_percent())
-  )
+plot(mtcars)
+
 ```
 
 ## Row {height="40%"}
 
-Principales Conclusiones
+Principales Conclusiones : Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.
 
 
 # Salud {orientation="columns"}
@@ -237,22 +212,7 @@ Principales Conclusiones
 #| label: Ecology-values
 #| results: hide
 
-ld_c <- ld |>
-  filter(delivery_method == "Cesarean")
-
-n_births_c <- nrow(ld_c)
-
-p_preterm_c <- ld_c |>
-  count(term) |>
-  mutate(p = n / sum(n)) |>
-  filter(term == "Pre-term") |>
-  pull(p)
-
-p_preterm_color_c <- case_when(
-  between(p_preterm_c, params$us_preterm_rate, params$us_preterm_rate + params$threshold_diff) ~ "warning",
-  p_preterm_c > params$us_preterm_rate + params$threshold_diff ~ "danger",
-  .default = "light"
-  )
+num_samples <- nsamples(ps)
 ```
 
 ### Row {height="20%"}
@@ -264,7 +224,7 @@ p_preterm_color_c <- case_when(
 list(
   icon = "file-medical",
   color = "primary",
-  value = n_births_c
+  value = num_samples
 )
 ```
 
@@ -274,8 +234,8 @@ list(
 
 list(
   icon = "calendar-week",
-  color = p_preterm_color_c,
-  value = label_percent(accuracy = 0.1)(p_preterm_c)
+  color = "primary",
+  value = num_samples
 )
 ```
 
@@ -285,8 +245,8 @@ list(
 
 list(
   icon = "calendar-week",
-  color = p_preterm_color_c,
-  value = label_percent(accuracy = 0.1)(p_preterm_c)
+  color = "primary",
+  value = num_samples
 )
 ```
 ### Row {height="40%"}
@@ -294,18 +254,7 @@ list(
 ```{r, Grafico Principal}
 #| title: Grafico Principal
 
-ld_c |>
-  count(maternal_age) |>
-  mutate(p = n / sum(n)) |>
-  ggplot(aes(x = maternal_age, y = n, group = 1)) +
-  geom_line(linewidth = 2, color = "#0e263560") +
-  geom_point(size = 3, color = "#0e2635") +
-  geom_point(size = 6, color = "#0e2635", shape = "circle open") +
-  labs(x = NULL) +
-  scale_y_continuous(
-    "Count",
-    sec.axis = sec_axis(~ . / n_births, name = "Proportion", labels = label_percent())
-  )
+plot(mtcars)
 ```
 
 #### Column {height="40%"}
@@ -324,33 +273,14 @@ Proporción Beneficiosas/Disruptivas: Esta proporción establece la relación en
 ```{r, Grafico 1}
 #| title: Grafico 1
 
-ld_c |>
-  count(maternal_age, parity) |>
-  ggplot(aes(x = n, y = fct_rev(maternal_age), fill = fct_rev(parity))) +
-  geom_col(position = "fill", color = "white") +
-  scale_fill_brewer(
-    palette = "Blues",
-    guide = guide_legend(reverse = TRUE),
-    direction = -1
-  ) +
-  scale_x_continuous(labels = label_percent()) +
-  labs(y = NULL, x = NULL, fill = "Parity")
+plot_bar(ps)
 ```
 
 ```{r Grafico2}
 #| title: Grafico 2
 
-ld_c |>
-  count(maternal_age, term) |>
-  ggplot(aes(x = n, y = fct_rev(maternal_age), fill = fct_rev(term))) +
-  geom_col(position = "fill", color = "white") +
-  scale_fill_brewer(
-    palette = "Greens",
-    guide = guide_legend(reverse = TRUE),
-    direction = -1
-  ) +
-  scale_x_continuous(labels = label_percent()) +
-  labs(y = NULL, x = NULL, fill = "Term")
+plot_bar(ps)
+
 ```
 
 

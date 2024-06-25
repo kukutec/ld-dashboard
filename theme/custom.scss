@@ -8,10 +8,10 @@ $font-family-sans-serif: "Atkinson Hyperlegible";
 
 // colors
 
-$navbar-bg: #0e2635;
+$navbar-bg: #201D4C;
 $navbar-fg: #F0F0F0;
 
-$link-color: #ae8b2d;
+$link-color: #FF932B;
 $hover-color: lighten($link-color, 40%);
 
 /*-- scss:rules --*/
@@ -20,7 +20,7 @@ $hover-color: lighten($link-color, 40%);
 }
 
 .nav-item > a:hover {
-  color: #ae8b2d;
+  color: #FF932B;
 }
 
 .nav-link{
