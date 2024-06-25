@@ -1,7 +1,8 @@
 ---
-title: "Labor and Delivery Dashboard"
+title: "Micro-ID Report"
 format: 
   dashboard:
+    embed-resources: true
     nav-buttons: [github]
     github: https://github.com/mine-cetinkaya-rundel/ld-dashboard
 logo: images/logo.png
@@ -9,9 +10,8 @@ theme: [sandstone, theme/custom.scss]
 fig-width: 10
 fig-asp: 0.3
 params:
-  month: "October"
-  year: "2023"
-  # 2021 rates: https://www.cdc.gov/nchs/data/nvsr/nvsr72/nvsr72-01.pdf
+  month: "June"
+  year: "2024"
   us_cesarean_rate: 0.321 
   us_preterm_rate:  0.1049
   threshold_diff: 0.02
@@ -19,7 +19,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r}
+```{r, load packages}
 #| label: load-packages
 #| message: false
 
@@ -31,20 +31,20 @@ library(gt)
 theme_set(theme_minimal(base_size = 24, base_family = "Atkinson Hyperlegible"))
 ```
 
-```{r}
+```{r, load data}
 #| label: load-data
 #| message: false
 
 ld <- read_excel("data/ld.xlsx")
 ```
 
-```{r}
+```{r, set inputs}}
 #| label: set-inputs
 
 time_period <- paste(params$month, params$year)
 ```
 
-```{r}
+```{r, data prep}
 #| label: prep-data
 
 ld <- ld |>
@@ -63,35 +63,36 @@ ld <- ld |>
 
 #  {.sidebar}
 
-This dashboard displays statistics for:
+Este panel muestra estadísticas para:
 
-|              |                     |
-|--------------|---------------------|
-| **Hospital** | Grey Sloan Memorial |
-| **Unit**     | Labor and Delivery  |
-| **Month**    | `{r} time_period`   |
+|             |                   |
+|-------------|-------------------|
+| **Cliente** | Salmones Spa      |
+| **Unidad**  | Puerto Varas #1   |
+| **Tipo Informe**  | Feed & Health   |
+| **Month**   | `{r} time_period` |
 
 ------------------------------------------------------------------------
 
 In `{r} time_period` the staff breakdown in the unit was as follows:
 
-|                          |     |
-|--------------------------|-----|
-| **Attending physicians** |  14 |
-| **Residents**            |  21 |
-| **Nurses**               |  12 |
+|                    |     |
+|--------------------|-----|
+| **Total Muestras** | 30  |
+| **Controles**      | 15  |
+| **Tratadas**       | 15  |
 
 ------------------------------------------------------------------------
 
 ::: {.callout-note collapse="true"}
 ## Disclaimer
 
-This is a fictional hospital. The data are simulated based on realistic birth characteristics and risk factors from [this report by the CDC](https://www.cdc.gov/nchs/data/nvsr/nvsr72/nvsr72-01.pdf).
+Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500
 :::
 
-# All
+# Resumen
 
-```{r}
+```{r, All Values}
 #| label: all-values
 #| results: hide
 
@@ -124,9 +125,9 @@ p_preterm_color <- case_when(
 
 ## Row {height="20%"}
 
-```{r}
+```{r, value box Micro-ID Score}
 #| content: valuebox
-#| title: "Total births"
+#| title: "Micro-ID Score"
 
 list(
   icon = "file-medical",
@@ -135,9 +136,20 @@ list(
 )
 ```
 
-```{r}
+```{r,  value box Scoring Salud}
 #| content: valuebox
-#| title: "Cesarean deliveries"
+#| title: "Score Salud"
+
+list(
+  icon = "file-medical",
+  color = "primary",
+  value = n_births
+)
+```
+
+```{r,  value boxScore Ecologia}
+#| content: valuebox
+#| title: Score Ecologia
 
 list(
   icon = "clipboard2-pulse",
@@ -146,9 +158,9 @@ list(
 )
 ```
 
-```{r}
+```{r,  value boxScore Metabolico}
 #| content: valuebox
-#| title: "Pre-term births"
+#| title: "Score Metabolico"
 
 list(
   icon = "calendar-week",
@@ -159,10 +171,10 @@ list(
 
 ## Row {height="40%"}
 
-### Column {width="40%"}
+### Column {width="60%"}
 
-```{r}
-#| title: Delivery method
+```{r, Distribucion Top Bacterias}
+#| title: Distribucion Top Bacterias
 
 ld |>
   count(delivery_method) |>
@@ -194,7 +206,7 @@ ld |>
   )
 ```
 
-### Column {width="60%"}
+### Column {width="40%"}
 
 ```{r}
 #| title: Maternal age
@@ -215,165 +227,14 @@ ld |>
 
 ## Row {height="40%"}
 
-```{r}
-#| title: Delivery method and parity
+Principales Conclusiones
 
-ld |>
-  count(parity, delivery_method) |>
-  ggplot(aes(x = n, y = fct_rev(parity), fill = delivery_method)) +
-  geom_col(position = "fill", color = "white") +
-  scale_fill_manual(
-    values = c("#ae8b2d", "#0e2635"),
-    guide = guide_legend(reverse = TRUE)
-  ) +
-  scale_x_continuous(labels = label_percent()) +
-  labs(y = NULL, x = NULL, fill = "Delivery\nmethod")
-```
 
-```{r}
-#| title: Delivery method and maternal age
-
-ld |>
-  count(maternal_age, delivery_method) |>
-  ggplot(aes(x = n, y = fct_rev(maternal_age), fill = delivery_method)) +
-  geom_col(position = "fill", color = "white") +
-  scale_fill_manual(
-    values = c("#ae8b2d", "#0e2635"),
-    guide = guide_legend(reverse = TRUE)
-  ) +
-  scale_x_continuous(labels = label_percent()) +
-  labs(y = NULL, x = NULL, fill = "Delivery\nmethod")
-```
-
-# Vaginal {orientation="columns"}
-
+# Salud {orientation="columns"}
 ## Column {width="60%"}
 
-```{r}
-#| label: vaginal-values
-#| results: hide
-
-ld_v <- ld |>
-  filter(delivery_method == "Vaginal")
-
-n_births_v <- nrow(ld_v)
-
-p_preterm_v <- ld_v |>
-  count(term) |>
-  mutate(p = n / sum(n)) |>
-  filter(term == "Pre-term") |>
-  pull(p)
-
-p_preterm_color_v <- case_when(
-  between(p_preterm_v, params$us_preterm_rate, params$us_preterm_rate + params$threshold_diff) ~ "warning",
-  p_preterm_v > params$us_preterm_rate + params$threshold_diff ~ "danger",
-  .default = "light"
-  )
-```
-
-### Row {height="20%"}
-
-```{r}
-#| component: valuebox
-#| title: "Total births"
-
-list(
-  icon = "file-medical",
-  color = "primary",
-  value = n_births_v
-)
-```
-
-```{r}
-#| component: valuebox
-#| title: "Pre-term births"
-
-list(
-  icon = "calendar-week",
-  color = p_preterm_color_v,
-  value = label_percent(accuracy = 0.1)(p_preterm_v)
-)
-```
-
-### Row {height="40%"}
-
-```{r}
-#| title: Maternal age
-
-ld_v |>
-  count(maternal_age) |>
-  mutate(p = n / sum(n)) |>
-  ggplot(aes(x = maternal_age, y = n, group = 1)) +
-  geom_line(linewidth = 2, color = "#0e263560") +
-  geom_point(size = 3, color = "#0e2635") +
-  geom_point(size = 6, color = "#0e2635", shape = "circle open") +
-  labs(x = NULL) +
-  scale_y_continuous(
-    "Count",
-    sec.axis = sec_axis(~ . / n_births, name = "Proportion", labels = label_percent())
-  )
-```
-
-### Row {height="40%" .tabset}
-
-```{r}
-#| title: Maternal age and parity
-
-ld_v |>
-  count(maternal_age, parity) |>
-  ggplot(aes(x = n, y = fct_rev(maternal_age), fill = fct_rev(parity))) +
-  geom_col(position = "fill", color = "white") +
-  scale_fill_brewer(
-    palette = "Blues",
-    guide = guide_legend(reverse = TRUE),
-    direction = -1
-  ) +
-  scale_x_continuous(labels = label_percent()) +
-  labs(y = NULL, x = NULL, fill = "Parity")
-```
-
-```{r}
-#| title: Maternal age and term
-
-ld_v |>
-  count(maternal_age, term) |>
-  ggplot(aes(x = n, y = fct_rev(maternal_age), fill = fct_rev(term))) +
-  geom_col(position = "fill", color = "white") +
-  scale_fill_brewer(
-    palette = "Greens",
-    guide = guide_legend(reverse = TRUE),
-    direction = -1
-  ) +
-  scale_x_continuous(labels = label_percent()) +
-  labs(y = NULL, x = NULL, fill = "Term")
-```
-
-## Column {width="40%"}
-
-```{r}
-#| title: Data
-
-ld_v |>
-  select(-delivery_method) |>
-  arrange(patient_id) |>
-  datatable(
-    colnames = c("ID", "Maternal age", "Parity", "Term"),
-    options = list(
-      dom = "lrtip", 
-      paging = TRUE,
-      lengthMenu = c(5, 10, 25),
-      pageLength = 10, 
-      scrollY = TRUE
-    ),
-  )
-```
-
-# Caesarean {orientation="columns"}
-
-## Column {width="60%"}
-
-```{r}
-#| label: cesarean-values
+```{r, Valores Salud}
+#| label: Ecology-values
 #| results: hide
 
 ld_c <- ld |>
@@ -396,9 +257,9 @@ p_preterm_color_c <- case_when(
 
 ### Row {height="20%"}
 
-```{r}
+```{r, Value box 1}
 #| component: valuebox
-#| title: "Total births"
+#| title: "box 1"
 
 list(
   icon = "file-medical",
@@ -407,9 +268,9 @@ list(
 )
 ```
 
-```{r}
+```{r, Value box 2}
 #| component: valuebox
-#| title: "Pre-term births"
+#| title: "box 2"
 
 list(
   icon = "calendar-week",
@@ -418,10 +279,20 @@ list(
 )
 ```
 
+```{r, Value box 3}
+#| component: valuebox
+#| title: "box 3"
+
+list(
+  icon = "calendar-week",
+  color = p_preterm_color_c,
+  value = label_percent(accuracy = 0.1)(p_preterm_c)
+)
+```
 ### Row {height="40%"}
 
-```{r}
-#| title: Maternal age
+```{r, Grafico Principal}
+#| title: Grafico Principal
 
 ld_c |>
   count(maternal_age) |>
@@ -437,10 +308,21 @@ ld_c |>
   )
 ```
 
-### Row {height="40%" .tabset}
+#### Column {height="40%"}
 
-```{r}
-#| title: Maternal age and parity
+En la primera sección de tu informe, verás 3 métricas diferentes para que comprendas la presencia total de bacterias en el cultivo de salmones. 
+
+Total de bacterias beneficiosas (género): cantidad total de copias encontradas de bacterias beneficiosas.
+
+Total de bacterias disruptivas (género): Cantidad total de copias encontradas de bacterias disruptivas. 
+
+Proporción Beneficiosas/Disruptivas: Esta proporción establece la relación entre bacterias beneficiosas y disruptivas en tu muestra. Mayor cantidad de bacterias beneficiosas indica que el sistema se encuentra con un balance beneficioso, sin embargo, valores altos de bacterias disruptivas y perjudiciales indican que el sistema podría presentar una disbiosis. 
+
+
+### Row {.tabset height="40%"}
+
+```{r, Grafico 1}
+#| title: Grafico 1
 
 ld_c |>
   count(maternal_age, parity) |>
@@ -455,8 +337,8 @@ ld_c |>
   labs(y = NULL, x = NULL, fill = "Parity")
 ```
 
-```{r}
-#| title: Maternal age and term
+```{r Grafico2}
+#| title: Grafico 2
 
 ld_c |>
   count(maternal_age, term) |>
@@ -471,33 +353,6 @@ ld_c |>
   labs(y = NULL, x = NULL, fill = "Term")
 ```
 
-## Column {width="40%"}
 
-```{r}
-#| title: Data
 
-ld_c |>
-  select(-delivery_method) |>
-  arrange(patient_id) |>
-  datatable(
-    colnames = c("ID", "Maternal age", "Parity", "Term"),
-    options = list(
-      dom = "lrtip", 
-      paging = TRUE,
-      lengthMenu = c(5, 10, 25),
-      pageLength = 10, 
-      scrollY = TRUE
-    ),
-  )
-```
 
-# Data
-
-```{r}
-ld |>
-  arrange(patient_id) |>
-  datatable(
-    colnames = c("ID", "Maternal age", "Delivery method", "Parity", "Term"),
-    options = list(dom = 'ftp', paging = TRUE)
-    )
-```
