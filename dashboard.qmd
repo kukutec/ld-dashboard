@@ -2,7 +2,7 @@
 title: "Micro-ID Report"
 format: 
   dashboard:
-    embed-resources: true
+    embed-resources: false
     nav-buttons: [github]
     github: https://github.com/mine-cetinkaya-rundel/ld-dashboard
 logo: images/logo.png
